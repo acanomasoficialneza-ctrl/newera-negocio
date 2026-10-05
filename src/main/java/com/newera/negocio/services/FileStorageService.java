@@ -10,10 +10,13 @@ import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Service
 public class FileStorageService {
 
-    private final String baseUploadDir = "E:\\casino\\newEra\\clientes";
+    @Value("${app.upload.dir:E:\\casino\\newEra\\clientes}")
+    private String baseUploadDir;
 
     public String saveProfileImage(MultipartFile file, Integer userId) throws IOException {
         return saveDocument(file, userId, "foto_perfil");
@@ -50,6 +53,6 @@ public class FileStorageService {
         file.transferTo(filePath.toFile());
 
         // Devolvemos la URL pública para que el frontend pueda consumirla directamente
-        return "https://65.38.98.77/clientes/" + userId + "/" + newFilename;
+        return "https://65.38.98.77/assets/clientes/" + userId + "/" + newFilename;
     }
 }
