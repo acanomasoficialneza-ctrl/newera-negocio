@@ -309,4 +309,22 @@ public class UsuarioController {
         stats.put("adminsTotales", adminRepository.count());
         return ResponseEntity.ok(stats);
     }
+
+    @GetMapping("/check-correo")
+    public ResponseEntity<?> checkCorreo(@RequestParam String correo) {
+        boolean exists = authRepository.existsByCorreo(correo);
+        return ResponseEntity.ok(java.util.Map.of("exists", exists));
+    }
+
+    @GetMapping("/check-telefono")
+    public ResponseEntity<?> checkTelefono(@RequestParam String telefono) {
+        boolean exists = clienteRepository.existsByTelefono(telefono);
+        return ResponseEntity.ok(java.util.Map.of("exists", exists));
+    }
+
+    @GetMapping("/check-admin-telefono")
+    public ResponseEntity<?> checkAdminTelefono(@RequestParam String telefono) {
+        boolean exists = adminRepository.existsByTelefono(telefono);
+        return ResponseEntity.ok(java.util.Map.of("exists", exists));
+    }
 }

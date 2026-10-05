@@ -59,10 +59,12 @@ public class CajaService {
         String adminStr = "";
         if (idAdminResponsable != null) {
             PerfilAdmin pa = perfilAdminRepository.findById(idAdminResponsable).orElse(null);
-            if (pa != null) adminStr = " - Creado por: " + pa.getNombreCompleto() + " (ID: " + idAdminResponsable + ")";
+            if (pa != null) adminStr = " - Solicitado por admin: " + pa.getNombreCompleto() + " (ID: " + idAdminResponsable + ")";
+        } else {
+            adminStr = " - Solicitado por el propio cliente";
         }
 
-        auditoriaService.registrarLog("INFO", "Caja: Solicitud de " + transaccion.getTipoTransaccion() + " por " + transaccion.getMonto() + " para cliente " + nombreCliente + " (ID: " + transaccion.getUsuario().getIdUsuario() + ")" + adminStr, "System", idAdminResponsable);
+        auditoriaService.registrarLog("INFO", "Caja: Solicitud de " + transaccion.getTipoTransaccion() + " por " + transaccion.getMonto() + " para cliente " + nombreCliente + " (ID: " + transaccion.getUsuario().getIdUsuario() + ")" + adminStr, "System");
         
         // Disparar Notificación al Supremo (Asumiendo Supremo id=1)
         try {
@@ -81,7 +83,7 @@ public class CajaService {
     }
 
     @Transactional
-    public TransaccionCaja aprobarTransaccion(Integer idTransaccion, Integer idAdmin) {
+    public TransaccionCaja aprobarTransaccion(Integer idTransaccion, Integer idAdmin, String nota) {
         TransaccionCaja transaccion = cajaRepository.findById(idTransaccion)
                 .orElseThrow(() -> new RuntimeException("Transacción no encontrada"));
                 
@@ -91,6 +93,11 @@ public class CajaService {
         transaccion.setEstatus("APROBADO");
         transaccion.setFechaResolucion(LocalDateTime.now());
         transaccion.setAdminAprobador(admin);
+
+        if (nota != null && !nota.trim().isEmpty()) {
+            String current = transaccion.getDetallesCuenta();
+            transaccion.setDetallesCuenta((current == null ? "" : current + " | ") + "Nota: " + nota.trim());
+        }
 
         UsuariosAuth clienteAuth = transaccion.getUsuario();
         PerfilCliente perfilCliente = perfilClienteRepository.findById(clienteAuth.getIdUsuario())
@@ -116,7 +123,7 @@ public class CajaService {
     }
 
     @Transactional
-    public TransaccionCaja rechazarTransaccion(Integer idTransaccion, Integer idAdmin) {
+    public TransaccionCaja rechazarTransaccion(Integer idTransaccion, Integer idAdmin, String nota) {
         TransaccionCaja transaccion = cajaRepository.findById(idTransaccion)
                 .orElseThrow(() -> new RuntimeException("Transacción no encontrada"));
                 
@@ -126,6 +133,11 @@ public class CajaService {
         transaccion.setEstatus("RECHAZADO");
         transaccion.setFechaResolucion(LocalDateTime.now());
         transaccion.setAdminAprobador(admin);
+
+        if (nota != null && !nota.trim().isEmpty()) {
+            String current = transaccion.getDetallesCuenta();
+            transaccion.setDetallesCuenta((current == null ? "" : current + " | ") + "Razón: " + nota.trim());
+        }
 
         String nombreAdmin = "Desconocido";
         PerfilAdmin pa = perfilAdminRepository.findById(idAdmin).orElse(null);

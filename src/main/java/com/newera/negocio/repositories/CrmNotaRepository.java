@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface CrmNotaRepository extends JpaRepository<CrmNota, Integer> {
-    List<CrmNota> findByClienteIdUsuario(Integer idCliente);
+    List<CrmNota> findByClienteIdUsuarioOrderByFechaCreacionDesc(Integer idCliente);
 }

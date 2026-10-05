@@ -101,25 +101,53 @@ public class DashboardService {
     }
 
     public List<DashboardChartDTO> getChartData(int days) {
-        String queryStr = "SELECT TO_CHAR(fecha_resolucion, 'YYYY-MM-DD') as date, " +
-                          "SUM(CASE WHEN tipo_transaccion = 'DEPOSITO' THEN monto ELSE -monto END) as value " +
+        // 1. Initial balance up to the start of the window
+        String initialQuery = "SELECT SUM(CASE WHEN tipo_transaccion = 'DEPOSITO' THEN monto ELSE -monto END) " +
+                              "FROM newera.transacciones_caja " +
+                              "WHERE estatus = 'APROBADO' AND fecha_resolucion < CURRENT_DATE - CAST(:days || ' days' AS INTERVAL)";
+        BigDecimal initialBalance = (BigDecimal) entityManager.createNativeQuery(initialQuery)
+                .setParameter("days", days)
+                .getSingleResult();
+        if (initialBalance == null) {
+            initialBalance = BigDecimal.ZERO;
+        }
+
+        // 2. Fetch all individual approved transactions in the window
+        String queryStr = "SELECT EXTRACT(EPOCH FROM fecha_resolucion) as time_epoch, " +
+                          "CASE WHEN tipo_transaccion = 'DEPOSITO' THEN monto ELSE -monto END as value " +
                           "FROM newera.transacciones_caja " +
                           "WHERE estatus = 'APROBADO' AND fecha_resolucion >= CURRENT_DATE - CAST(:days || ' days' AS INTERVAL) " +
-                          "GROUP BY TO_CHAR(fecha_resolucion, 'YYYY-MM-DD') " +
-                          "ORDER BY date ASC";
+                          "ORDER BY fecha_resolucion ASC";
                           
         List<Object[]> results = entityManager.createNativeQuery(queryStr)
                 .setParameter("days", days)
                 .getResultList();
 
         List<DashboardChartDTO> chartData = new ArrayList<>();
-        BigDecimal cumulative = BigDecimal.ZERO;
+        BigDecimal cumulative = initialBalance;
         
+        long lastTime = 0;
+
         for (Object[] row : results) {
-            String date = (String) row[0];
-            BigDecimal dailyValue = (BigDecimal) row[1];
-            cumulative = cumulative.add(dailyValue != null ? dailyValue : BigDecimal.ZERO);
-            chartData.add(new DashboardChartDTO(date, cumulative));
+            Number epochNum = (Number) row[0];
+            long time = epochNum.longValue();
+            // Lightweight charts needs unique strictly ascending time values
+            if (time <= lastTime) {
+                time = lastTime + 1;
+            }
+            lastTime = time;
+
+            BigDecimal txValue = (BigDecimal) row[1];
+            cumulative = cumulative.add(txValue != null ? txValue : BigDecimal.ZERO);
+            
+            // To ensure the chart displays correctly, Lightweight Charts uses Unix timestamp in seconds for intraday
+            chartData.add(new DashboardChartDTO(time, cumulative));
+        }
+        
+        // If there is no data in the window, at least add a point for the start of the window so the line isn't empty
+        if (chartData.isEmpty()) {
+            long windowStart = System.currentTimeMillis() / 1000L - (days * 86400L);
+            chartData.add(new DashboardChartDTO(windowStart, cumulative));
         }
         
         return chartData;

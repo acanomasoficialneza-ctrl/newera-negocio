@@ -15,8 +15,8 @@ public class CrmController {
     private final CrmService crmService;
 
     @GetMapping("/cliente/{idCliente}")
-    public ResponseEntity<List<CrmNota>> getNotas(@PathVariable Integer idCliente) {
-        return ResponseEntity.ok(crmService.getNotasByCliente(idCliente));
+    public ResponseEntity<List<java.util.Map<String, Object>>> getNotas(@PathVariable Integer idCliente) {
+        return ResponseEntity.ok(crmService.getNotasConNombres(idCliente));
     }
 
     @PostMapping

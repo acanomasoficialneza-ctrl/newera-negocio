@@ -28,8 +28,8 @@ public class ApuestaController {
     }
 
     @PostMapping("/{id}/cerrar")
-    public ResponseEntity<ApuestaCliente> cerrarPosicion(@PathVariable Integer id, @RequestParam BigDecimal gananciaPerdida) {
-        return ResponseEntity.ok(apuestaService.cerrarPosicion(id, gananciaPerdida));
+    public ResponseEntity<ApuestaCliente> cerrarPosicion(@PathVariable Integer id, @RequestParam BigDecimal gananciaPerdida, @RequestParam(required = false) Integer idAdmin) {
+        return ResponseEntity.ok(apuestaService.cerrarPosicion(id, gananciaPerdida, idAdmin));
     }
 
     @PutMapping("/{id}")

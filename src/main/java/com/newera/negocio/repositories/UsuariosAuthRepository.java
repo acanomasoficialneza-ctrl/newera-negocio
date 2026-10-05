@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface UsuariosAuthRepository extends JpaRepository<UsuariosAuth, Integer> {
     List<UsuariosAuth> findByRol(String rol);
+    boolean existsByCorreo(String correo);
 }

@@ -22,6 +22,7 @@ public class UsuarioService {
     private final PerfilClienteRepository clienteRepository;
     private final PerfilAdminRepository adminRepository;
     private final AuditoriaService auditoriaService;
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
     @Transactional
     public UsuariosAuth registrarUsuario(RegistroRequest request, Integer callerId) {
@@ -47,6 +48,19 @@ public class UsuarioService {
             cliente.setUrlIneFrente("/assets/images/default-ine.png");
             cliente.setFechaRegistro(LocalDateTime.now());
             clienteRepository.save(cliente);
+
+            // Send notification to Supremo
+            try {
+                java.util.Map<String, Object> req = new java.util.HashMap<>();
+                req.put("idUsuarioDestino", 1); // Supremo ID
+                req.put("correoDestino", "supremo@newera.com");
+                req.put("titulo", "Nuevo Cliente Registrado");
+                req.put("mensaje", "El cliente " + request.getNombreCompleto() + " se ha registrado. Por favor asigne un administrador.");
+                req.put("tipo", "WARNING");
+                restTemplate.postForObject("http://localhost:8084/api/v1/notificaciones/enviar", req, Object.class);
+            } catch (Exception e) {
+                System.err.println("Error enviando notificacion a Supremo: " + e.getMessage());
+            }
         } else {
             PerfilAdmin admin = new PerfilAdmin();
             admin.setUsuarioAuth(auth);

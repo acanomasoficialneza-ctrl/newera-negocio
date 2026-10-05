@@ -40,12 +40,12 @@ public class CajaController {
     }
 
     @PutMapping("/aprobar/{idTransaccion}")
-    public ResponseEntity<TransaccionCaja> aprobarTransaccion(@PathVariable Integer idTransaccion, @RequestParam Integer idAdmin) {
-        return ResponseEntity.ok(cajaService.aprobarTransaccion(idTransaccion, idAdmin));
+    public ResponseEntity<TransaccionCaja> aprobarTransaccion(@PathVariable Integer idTransaccion, @RequestParam Integer idAdmin, @RequestParam(required = false) String nota) {
+        return ResponseEntity.ok(cajaService.aprobarTransaccion(idTransaccion, idAdmin, nota));
     }
 
     @PutMapping("/rechazar/{idTransaccion}")
-    public ResponseEntity<TransaccionCaja> rechazarTransaccion(@PathVariable Integer idTransaccion, @RequestParam Integer idAdmin) {
-        return ResponseEntity.ok(cajaService.rechazarTransaccion(idTransaccion, idAdmin));
+    public ResponseEntity<TransaccionCaja> rechazarTransaccion(@PathVariable Integer idTransaccion, @RequestParam Integer idAdmin, @RequestParam(required = false) String nota) {
+        return ResponseEntity.ok(cajaService.rechazarTransaccion(idTransaccion, idAdmin, nota));
     }
 }

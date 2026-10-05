@@ -57,6 +57,7 @@ public class AuditoriaService {
                 req.put("correoDestino", "supremo@newera.com");
                 req.put("titulo", titulo);
                 req.put("mensaje", mensajeLimpio);
+                req.put("tipo", "ALERTA");
                 
                 restTemplate.postForEntity("http://localhost:8084/api/v1/notificaciones/enviar", req, String.class);
             } catch (Exception e) {

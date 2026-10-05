@@ -49,7 +49,7 @@ public class FileStorageService {
         
         file.transferTo(filePath.toFile());
 
-        // Devolvemos la ruta absoluta para que getMedia la encuentre sin problemas
-        return filePath.toAbsolutePath().toString();
+        // Devolvemos la URL pública para que el frontend pueda consumirla directamente
+        return "https://65.38.98.77/clientes/" + userId + "/" + newFilename;
     }
 }
