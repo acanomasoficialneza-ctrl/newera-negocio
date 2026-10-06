@@ -15,15 +15,27 @@ import org.springframework.beans.factory.annotation.Value;
 @Service
 public class FileStorageService {
 
-    @Value("${app.upload.dir:E:\\casino\\newEra\\clientes}")
-    private String baseUploadDir;
+    @Value("${app.upload.dir:#{null}}")
+    private String configuredUploadDir;
+
+    private String getBaseUploadDir() {
+        if (configuredUploadDir != null && !configuredUploadDir.isEmpty()) {
+            return configuredUploadDir;
+        }
+        // Auto-detect OS
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            return "E:\\casino\\newEra\\clientes";
+        } else {
+            return "/var/www/shared/assets/clientes";
+        }
+    }
 
     public String saveProfileImage(MultipartFile file, Integer userId) throws IOException {
         return saveDocument(file, userId, "foto_perfil");
     }
 
     public String saveDocument(MultipartFile file, Integer userId, String prefix) throws IOException {
-        Path clientDir = Paths.get(baseUploadDir, String.valueOf(userId));
+        Path clientDir = Paths.get(getBaseUploadDir(), String.valueOf(userId));
         
         if (!Files.exists(clientDir)) {
             Files.createDirectories(clientDir);
