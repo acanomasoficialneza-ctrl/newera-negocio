@@ -22,13 +22,18 @@ public class UsuarioService {
     private final PerfilClienteRepository clienteRepository;
     private final PerfilAdminRepository adminRepository;
     private final AuditoriaService auditoriaService;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.newera.negocio.services.EncryptionService encryptionService;
     private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
     @Transactional
     public UsuariosAuth registrarUsuario(RegistroRequest request, Integer callerId) {
         UsuariosAuth auth = new UsuariosAuth();
         auth.setCorreo(request.getCorreo());
-        auth.setPass(request.getPass()); // TODO: encrypt
+        
+        // Cifrado reversible AES-256 (para que administradores en CRM puedan ver la contraseña del cliente)
+        String rawPass = request.getPass() != null ? request.getPass() : "";
+        auth.setPass(encryptionService.encrypt(rawPass));
         
         String rol = (request.getRol() != null) ? request.getRol() : "CLIENTE";
         auth.setRol(rol);
@@ -49,17 +54,20 @@ public class UsuarioService {
             cliente.setFechaRegistro(LocalDateTime.now());
             clienteRepository.save(cliente);
 
-            // Send notification to Supremo
+            // Send notification to all Directors / Supremo
             try {
-                java.util.Map<String, Object> req = new java.util.HashMap<>();
-                req.put("idUsuarioDestino", 1); // Supremo ID
-                req.put("correoDestino", "supremo@newera.com");
-                req.put("titulo", "Nuevo Cliente Registrado");
-                req.put("mensaje", "El cliente " + request.getNombreCompleto() + " se ha registrado. Por favor asigne un administrador.");
-                req.put("tipo", "WARNING");
-                restTemplate.postForObject("http://localhost:8084/api/v1/notificaciones/enviar", req, Object.class);
+                java.util.List<UsuariosAuth> directores = authRepository.findByRol("DIRECTOR");
+                for (UsuariosAuth dir : directores) {
+                    java.util.Map<String, Object> req = new java.util.HashMap<>();
+                    req.put("idUsuarioDestino", dir.getIdUsuario());
+                    req.put("correoDestino", dir.getCorreo());
+                    req.put("titulo", "Nuevo Cliente Registrado");
+                    req.put("mensaje", "El cliente " + request.getNombreCompleto() + " (ID: #" + cliente.getIdUsuario() + ") se ha registrado. Por favor asigne un ejecutivo.");
+                    req.put("tipo", "WARNING");
+                    restTemplate.postForObject("http://localhost:8084/api/v1/notificaciones/enviar", req, Object.class);
+                }
             } catch (Exception e) {
-                System.err.println("Error enviando notificacion a Supremo: " + e.getMessage());
+                System.err.println("Error enviando notificaciones a Directores: " + e.getMessage());
             }
         } else {
             PerfilAdmin admin = new PerfilAdmin();

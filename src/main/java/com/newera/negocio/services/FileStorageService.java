@@ -34,7 +34,32 @@ public class FileStorageService {
         return saveDocument(file, userId, "foto_perfil");
     }
 
+    private static final java.util.List<String> ALLOWED_EXTENSIONS = java.util.List.of(".jpg", ".jpeg", ".png", ".webp");
+    private static final java.util.List<String> ALLOWED_CONTENT_TYPES = java.util.List.of(
+        "image/jpeg", "image/png", "image/webp"
+    );
+
     public String saveDocument(MultipartFile file, Integer userId, String prefix) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("El archivo proporcionado está vacío.");
+        }
+
+        // Validar tipo de archivo básico
+        String contentType = file.getContentType();
+        if (contentType != null && !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("Tipo de archivo no permitido. Solo se aceptan imágenes JPG, PNG o WEBP.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+        }
+
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            extension = ".jpg"; // Normalizar si la extensión original difiere pero el mime-type es válido
+        }
+
         Path clientDir = Paths.get(getBaseUploadDir(), String.valueOf(userId));
         
         if (!Files.exists(clientDir)) {
@@ -51,12 +76,6 @@ public class FileStorageService {
                          System.err.println("No se pudo eliminar archivo anterior: " + p);
                      }
                  });
-        }
-
-        String originalFilename = file.getOriginalFilename();
-        String extension = "";
-        if (originalFilename != null && originalFilename.contains(".")) {
-            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
 
         String newFilename = prefix + extension;

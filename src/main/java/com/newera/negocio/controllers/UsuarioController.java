@@ -25,6 +25,8 @@ public class UsuarioController {
     private final com.newera.negocio.services.UsuarioService usuarioService;
     private final com.newera.negocio.services.AuditoriaService auditoriaService;
     private final com.newera.negocio.repositories.AsignacionClienteRepository asignacionClienteRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final com.newera.negocio.services.EncryptionService encryptionService;
 
     @PostMapping("/registro")
     public ResponseEntity<UsuariosAuth> registrarUsuario(@RequestBody RegistroRequest request) {
@@ -87,11 +89,28 @@ public class UsuarioController {
 
         if ("CLIENTE".equals(auth.getRol())) {
             return clienteRepository.findById(id)
-                    .map(ResponseEntity::ok)
+                    .map(c -> {
+                        // Asegurar que viaje cifrado con AES-256 (nunca texto plano en response)
+                        if (c.getUsuarioAuth() != null && c.getUsuarioAuth().getPass() != null) {
+                            String pass = c.getUsuarioAuth().getPass();
+                            if (!encryptionService.isEncrypted(pass)) {
+                                c.getUsuarioAuth().setPass(encryptionService.encrypt(pass));
+                            }
+                        }
+                        return ResponseEntity.ok(c);
+                    })
                     .orElseGet(() -> ResponseEntity.notFound().build());
         } else {
             return adminRepository.findById(id)
-                    .map(ResponseEntity::ok)
+                    .map(a -> {
+                        if (a.getUsuarioAuth() != null && a.getUsuarioAuth().getPass() != null) {
+                            String pass = a.getUsuarioAuth().getPass();
+                            if (!encryptionService.isEncrypted(pass)) {
+                                a.getUsuarioAuth().setPass(encryptionService.encrypt(pass));
+                            }
+                        }
+                        return ResponseEntity.ok(a);
+                    })
                     .orElseGet(() -> ResponseEntity.notFound().build());
         }
     }
@@ -125,12 +144,31 @@ public class UsuarioController {
 
     @GetMapping("/clientes")
     public ResponseEntity<?> getClientes() {
-        return ResponseEntity.ok(clienteRepository.findAll());
+        java.util.List<PerfilCliente> lista = clienteRepository.findAll();
+        // Garantizar que la contraseña viaje cifrada (ENC:...) en los responses HTTP
+        for (PerfilCliente c : lista) {
+            if (c.getUsuarioAuth() != null && c.getUsuarioAuth().getPass() != null) {
+                String pass = c.getUsuarioAuth().getPass();
+                if (!encryptionService.isEncrypted(pass)) {
+                    c.getUsuarioAuth().setPass(encryptionService.encrypt(pass));
+                }
+            }
+        }
+        return ResponseEntity.ok(lista);
     }
 
     @GetMapping("/admins")
     public ResponseEntity<?> getAdmins() {
-        return ResponseEntity.ok(adminRepository.findAll());
+        java.util.List<PerfilAdmin> lista = adminRepository.findAll();
+        for (PerfilAdmin a : lista) {
+            if (a.getUsuarioAuth() != null && a.getUsuarioAuth().getPass() != null) {
+                String pass = a.getUsuarioAuth().getPass();
+                if (!encryptionService.isEncrypted(pass)) {
+                    a.getUsuarioAuth().setPass(encryptionService.encrypt(pass));
+                }
+            }
+        }
+        return ResponseEntity.ok(lista);
     }
 
     @PostMapping("/registro/admin")
@@ -223,8 +261,11 @@ public class UsuarioController {
             
             boolean authModified = false;
             if (body.containsKey("pass")) {
-                auth.setPass((String) body.get("pass"));
-                authModified = true;
+                String rawPass = (String) body.get("pass");
+                if (rawPass != null && !rawPass.isBlank()) {
+                    auth.setPass(encryptionService.encrypt(rawPass));
+                    authModified = true;
+                }
             }
             if (body.containsKey("correo")) {
                 auth.setCorreo((String) body.get("correo"));
@@ -253,8 +294,11 @@ public class UsuarioController {
                 authRepository.save(auth);
             }
             if (body.containsKey("pass")) {
-                auth.setPass((String) body.get("pass"));
-                authRepository.save(auth);
+                String rawPass = (String) body.get("pass");
+                if (rawPass != null && !rawPass.isBlank()) {
+                    auth.setPass(encryptionService.encrypt(rawPass));
+                    authRepository.save(auth);
+                }
             }
             Integer callerId = (callerIdStr != null && !callerIdStr.isBlank() && !callerIdStr.equals("null")) ? Integer.valueOf(callerIdStr) : null;
             auditoriaService.registrarLog("INFO", "Actualizó perfil de administrador - ID: " + id + " - Nombre: " + admin.getNombreCompleto(), "127.0.0.1", callerId);
