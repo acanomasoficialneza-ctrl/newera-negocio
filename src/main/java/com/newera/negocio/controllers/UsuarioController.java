@@ -27,6 +27,12 @@ public class UsuarioController {
     private final com.newera.negocio.repositories.AsignacionClienteRepository asignacionClienteRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
     private final com.newera.negocio.services.EncryptionService encryptionService;
+    private final com.newera.negocio.repositories.DocumentoLegalRepository documentoLegalRepository;
+
+    @GetMapping("/documentos-legales")
+    public ResponseEntity<java.util.List<com.newera.negocio.models.DocumentoLegal>> getDocumentosLegales() {
+        return ResponseEntity.ok(documentoLegalRepository.findByActivoTrueOrderByIdDocumentoAsc());
+    }
 
     @PostMapping("/registro")
     public ResponseEntity<UsuariosAuth> registrarUsuario(@RequestBody RegistroRequest request) {
@@ -226,6 +232,9 @@ public class UsuarioController {
         cliente.setUrlIneFrente(defaultFotoCredencial);
         cliente.setUrlIneReverso(defaultFotoCredencial);
 
+        cliente.setAceptoTerminos(true);
+        cliente.setFechaAceptacionTerminos(java.time.LocalDateTime.now());
+
         clienteRepository.save(cliente);
         
         // Asignar por default a todos los roles "DIRECTOR"
@@ -237,6 +246,9 @@ public class UsuarioController {
             asignacion.setFechaAsignacion(java.time.LocalDateTime.now());
             asignacionClienteRepository.save(asignacion);
         }
+
+        String actorStr = (callerId != null) ? "Admin (ID: " + callerId + ")" : "Autoregistro Login";
+        auditoriaService.registrarLog("INFO", "Registro de nuevo cliente (" + auth.getCorreo() + ") con aceptación de términos legales por " + actorStr, "System");
         
         return ResponseEntity.ok(cliente);
     }

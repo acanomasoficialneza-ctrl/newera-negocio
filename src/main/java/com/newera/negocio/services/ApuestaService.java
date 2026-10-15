@@ -188,8 +188,23 @@ public class ApuestaService {
         ApuestaCliente apuesta = apuestaRepository.findById(idApuesta)
                 .orElseThrow(() -> new RuntimeException("Apuesta no encontrada"));
         
+        if (updates.containsKey("valorUnidad")) {
+            java.math.BigDecimal nuevoValor = new java.math.BigDecimal(updates.get("valorUnidad").toString());
+            apuesta.setValorUnidad(nuevoValor);
+        }
+        if (updates.containsKey("montoApuesta")) {
+            java.math.BigDecimal nuevoMonto = new java.math.BigDecimal(updates.get("montoApuesta").toString());
+            apuesta.setMontoApuesta(nuevoMonto);
+            if (!updates.containsKey("margen")) {
+                apuesta.setMargen(nuevoMonto);
+            }
+        }
         if (updates.containsKey("margen")) {
-            apuesta.setMargen(new java.math.BigDecimal(updates.get("margen").toString()));
+            java.math.BigDecimal nuevoMargen = new java.math.BigDecimal(updates.get("margen").toString());
+            apuesta.setMargen(nuevoMargen);
+            if (!updates.containsKey("montoApuesta")) {
+                apuesta.setMontoApuesta(nuevoMargen);
+            }
         }
         if (updates.containsKey("swap")) {
             apuesta.setSwap(new java.math.BigDecimal(updates.get("swap").toString()));
@@ -198,13 +213,36 @@ public class ApuestaService {
         ApuestaCliente saved = apuestaRepository.save(apuesta);
 
         String nombreCliente = "Desconocido";
+        String idClienteStr = "N/A";
         if (apuesta.getUsuario() != null) {
-            PerfilCliente pc = perfilClienteRepository.findById(apuesta.getUsuario().getIdUsuario()).orElse(null);
-            if (pc != null) nombreCliente = pc.getNombreCompleto();
+            idClienteStr = String.valueOf(apuesta.getUsuario().getIdUsuario());
+            PerfilCliente pc = perfilClienteRepository.findByIdLocked(apuesta.getUsuario().getIdUsuario()).orElse(null);
+            if (pc != null) {
+                nombreCliente = pc.getNombreCompleto();
+
+                // Si la posición está abierta, sincronizar margen utilizado y margen libre del cliente
+                if ("ABIERTO".equalsIgnoreCase(saved.getEstatusCompra())) {
+                    List<ApuestaCliente> posicionesAbiertas = apuestaRepository.findByUsuarioIdUsuarioAndEstatusCompra(apuesta.getUsuario().getIdUsuario(), "ABIERTO");
+                    java.math.BigDecimal realMargenUtilizado = java.math.BigDecimal.ZERO;
+                    for (ApuestaCliente pos : posicionesAbiertas) {
+                        if (pos.getIdApuestaCliente().equals(idApuesta)) {
+                            if (saved.getMargen() != null) {
+                                realMargenUtilizado = realMargenUtilizado.add(saved.getMargen());
+                            }
+                        } else if (pos.getMargen() != null) {
+                            realMargenUtilizado = realMargenUtilizado.add(pos.getMargen());
+                        }
+                    }
+                    pc.setMargenUtilizado(realMargenUtilizado);
+                    if (pc.getBalance() != null) {
+                        pc.setMargenLibre(pc.getBalance().subtract(realMargenUtilizado));
+                    }
+                    perfilClienteRepository.save(pc);
+                }
+            }
         }
         
-        String idClienteStr = apuesta.getUsuario() != null ? String.valueOf(apuesta.getUsuario().getIdUsuario()) : "N/A";
-        auditoriaService.registrarLog("INFO", "Trading: Orden ACTUALIZADA (ID: " + idApuesta + ") para cliente " + nombreCliente + " (ID: " + idClienteStr + ")", "System");
+        auditoriaService.registrarLog("INFO", "Trading: Orden ACTUALIZADA (ID: " + idApuesta + ") nuevo monto/margen: $" + saved.getMontoApuesta() + " para cliente " + nombreCliente + " (ID: " + idClienteStr + ")", "System");
         return saved;
     }
 }

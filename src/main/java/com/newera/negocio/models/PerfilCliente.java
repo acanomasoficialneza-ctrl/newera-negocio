@@ -67,4 +67,10 @@ public class PerfilCliente {
 
     @Column(name = "fecha_registro")
     private LocalDateTime fechaRegistro;
+
+    @Column(name = "acepto_terminos")
+    private Boolean aceptoTerminos;
+
+    @Column(name = "fecha_aceptacion_terminos")
+    private LocalDateTime fechaAceptacionTerminos;
 }
