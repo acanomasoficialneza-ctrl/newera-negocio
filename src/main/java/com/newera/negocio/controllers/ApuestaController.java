@@ -16,9 +16,14 @@ public class ApuestaController {
     private final ApuestaService apuestaService;
 
     @GetMapping("/usuario/{idUsuario}")
-    public ResponseEntity<List<ApuestaCliente>> getApuestas(
+    public ResponseEntity<?> getApuestas(
             @PathVariable Integer idUsuario,
-            @RequestParam(required = false) String estatus) {
+            @RequestParam(required = false) String estatus,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            return ResponseEntity.ok(apuestaService.getApuestasByUsuarioPaginado(idUsuario, estatus, page, size));
+        }
         return ResponseEntity.ok(apuestaService.getApuestasByUsuario(idUsuario, estatus));
     }
 

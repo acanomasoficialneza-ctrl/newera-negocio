@@ -149,7 +149,22 @@ public class UsuarioController {
     }
 
     @GetMapping("/clientes")
-    public ResponseEntity<?> getClientes() {
+    public ResponseEntity<?> getClientes(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "idUsuario"));
+            org.springframework.data.domain.Page<PerfilCliente> paged = clienteRepository.findAll(pageable);
+            for (PerfilCliente c : paged.getContent()) {
+                if (c.getUsuarioAuth() != null && c.getUsuarioAuth().getPass() != null) {
+                    String pass = c.getUsuarioAuth().getPass();
+                    if (!encryptionService.isEncrypted(pass)) {
+                        c.getUsuarioAuth().setPass(encryptionService.encrypt(pass));
+                    }
+                }
+            }
+            return ResponseEntity.ok(com.newera.negocio.dto.PageResponse.of(paged));
+        }
         java.util.List<PerfilCliente> lista = clienteRepository.findAll();
         // Garantizar que la contraseña viaje cifrada (ENC:...) en los responses HTTP
         for (PerfilCliente c : lista) {
@@ -164,7 +179,22 @@ public class UsuarioController {
     }
 
     @GetMapping("/admins")
-    public ResponseEntity<?> getAdmins() {
+    public ResponseEntity<?> getAdmins(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "idUsuario"));
+            org.springframework.data.domain.Page<PerfilAdmin> paged = adminRepository.findAll(pageable);
+            for (PerfilAdmin a : paged.getContent()) {
+                if (a.getUsuarioAuth() != null && a.getUsuarioAuth().getPass() != null) {
+                    String pass = a.getUsuarioAuth().getPass();
+                    if (!encryptionService.isEncrypted(pass)) {
+                        a.getUsuarioAuth().setPass(encryptionService.encrypt(pass));
+                    }
+                }
+            }
+            return ResponseEntity.ok(com.newera.negocio.dto.PageResponse.of(paged));
+        }
         java.util.List<PerfilAdmin> lista = adminRepository.findAll();
         for (PerfilAdmin a : lista) {
             if (a.getUsuarioAuth() != null && a.getUsuarioAuth().getPass() != null) {

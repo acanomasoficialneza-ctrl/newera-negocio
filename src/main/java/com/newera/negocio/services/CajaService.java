@@ -15,6 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.newera.negocio.dto.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +36,12 @@ public class CajaService {
         return cajaRepository.findByUsuarioIdUsuario(idUsuario);
     }
 
+    public PageResponse<TransaccionCaja> getTransaccionesByUsuarioPaginado(Integer idUsuario, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaSolicitud"));
+        Page<TransaccionCaja> resultado = cajaRepository.findByUsuarioIdUsuario(idUsuario, pageable);
+        return PageResponse.of(resultado);
+    }
+
     public List<TransaccionCaja> getAllTransacciones() {
         return cajaRepository.findAll();
     }
@@ -39,10 +50,22 @@ public class CajaService {
         return cajaRepository.findByEstatus("PENDIENTE");
     }
 
+    public PageResponse<TransaccionCaja> getTransaccionesPendientesPaginado(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaSolicitud"));
+        Page<TransaccionCaja> resultado = cajaRepository.findByEstatus("PENDIENTE", pageable);
+        return PageResponse.of(resultado);
+    }
+
     public List<TransaccionCaja> getTransaccionesHistorial() {
         List<TransaccionCaja> list = cajaRepository.findByEstatusNot("PENDIENTE");
         list.sort((a, b) -> b.getFechaSolicitud().compareTo(a.getFechaSolicitud()));
         return list;
+    }
+
+    public PageResponse<TransaccionCaja> getTransaccionesHistorialPaginado(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaSolicitud"));
+        Page<TransaccionCaja> resultado = cajaRepository.findByEstatusNot("PENDIENTE", pageable);
+        return PageResponse.of(resultado);
     }
 
     @Transactional

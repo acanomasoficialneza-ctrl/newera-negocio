@@ -16,7 +16,16 @@ public class AuditoriaController {
     private final AuditoriaService auditoriaService;
 
     @GetMapping
-    public ResponseEntity<List<Auditoria>> getBitacora(@RequestParam(required = false) String fecha) {
+    public ResponseEntity<?> getBitacora(
+            @RequestParam(required = false) String fecha,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            if (fecha != null && !fecha.isBlank()) {
+                return ResponseEntity.ok(auditoriaService.getLogsByDatePaginado(fecha, page, size));
+            }
+            return ResponseEntity.ok(auditoriaService.getLogsPaginado(page, size));
+        }
         if (fecha != null && !fecha.isBlank()) {
             return ResponseEntity.ok(auditoriaService.getLogsByDate(fecha));
         }

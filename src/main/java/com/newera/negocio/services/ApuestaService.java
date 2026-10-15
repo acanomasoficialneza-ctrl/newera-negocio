@@ -12,7 +12,11 @@ import org.springframework.web.client.RestTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.newera.negocio.services.AuditoriaService;
+import com.newera.negocio.dto.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,6 +36,17 @@ public class ApuestaService {
             return apuestaRepository.findByUsuarioIdUsuarioAndEstatusCompra(idUsuario, estatusCompra);
         }
         return apuestaRepository.findByUsuarioIdUsuario(idUsuario);
+    }
+
+    public PageResponse<ApuestaCliente> getApuestasByUsuarioPaginado(Integer idUsuario, String estatusCompra, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "fechaCreacion"));
+        Page<ApuestaCliente> resultado;
+        if (estatusCompra != null && !estatusCompra.isEmpty()) {
+            resultado = apuestaRepository.findByUsuarioIdUsuarioAndEstatusCompra(idUsuario, estatusCompra, pageable);
+        } else {
+            resultado = apuestaRepository.findByUsuarioIdUsuario(idUsuario, pageable);
+        }
+        return PageResponse.of(resultado);
     }
 
     @Transactional

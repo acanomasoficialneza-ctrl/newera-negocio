@@ -70,6 +70,11 @@ public class AuditoriaService {
         return auditoriaRepository.findAll();
     }
 
+    public com.newera.negocio.dto.PageResponse<Auditoria> getLogsPaginado(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "fechaEvento"));
+        return com.newera.negocio.dto.PageResponse.of(auditoriaRepository.findAll(pageable));
+    }
+
     public java.util.List<Auditoria> getLogsByDate(String date) {
         try {
             java.time.LocalDate localDate = java.time.LocalDate.parse(date);
@@ -78,6 +83,18 @@ public class AuditoriaService {
             return auditoriaRepository.findByFechaEventoBetween(startOfDay, endOfDay);
         } catch (Exception e) {
             return auditoriaRepository.findAll();
+        }
+    }
+
+    public com.newera.negocio.dto.PageResponse<Auditoria> getLogsByDatePaginado(String date, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "fechaEvento"));
+        try {
+            java.time.LocalDate localDate = java.time.LocalDate.parse(date);
+            LocalDateTime startOfDay = localDate.atStartOfDay();
+            LocalDateTime endOfDay = localDate.atTime(java.time.LocalTime.MAX);
+            return com.newera.negocio.dto.PageResponse.of(auditoriaRepository.findByFechaEventoBetween(startOfDay, endOfDay, pageable));
+        } catch (Exception e) {
+            return com.newera.negocio.dto.PageResponse.of(auditoriaRepository.findAll(pageable));
         }
     }
 }

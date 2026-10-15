@@ -1,6 +1,8 @@
 package com.newera.negocio.repositories;
 
 import com.newera.negocio.models.TransaccionCaja;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +13,8 @@ public interface TransaccionCajaRepository extends JpaRepository<TransaccionCaja
     List<TransaccionCaja> findByUsuarioIdUsuario(Integer idUsuario);
     List<TransaccionCaja> findByEstatus(String estatus);
     List<TransaccionCaja> findByEstatusNot(String estatus);
+
+    Page<TransaccionCaja> findByUsuarioIdUsuario(Integer idUsuario, Pageable pageable);
+    Page<TransaccionCaja> findByEstatus(String estatus, Pageable pageable);
+    Page<TransaccionCaja> findByEstatusNot(String estatus, Pageable pageable);
 }

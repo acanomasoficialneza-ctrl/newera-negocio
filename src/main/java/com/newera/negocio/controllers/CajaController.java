@@ -15,7 +15,13 @@ public class CajaController {
     private final CajaService cajaService;
 
     @GetMapping("/usuario/{idUsuario}")
-    public ResponseEntity<List<TransaccionCaja>> getTransacciones(@PathVariable Integer idUsuario) {
+    public ResponseEntity<?> getTransacciones(
+            @PathVariable Integer idUsuario,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            return ResponseEntity.ok(cajaService.getTransaccionesByUsuarioPaginado(idUsuario, page, size));
+        }
         return ResponseEntity.ok(cajaService.getTransaccionesByUsuario(idUsuario));
     }
 
@@ -25,12 +31,22 @@ public class CajaController {
     }
 
     @GetMapping("/pendientes")
-    public ResponseEntity<List<TransaccionCaja>> getTransaccionesPendientes() {
+    public ResponseEntity<?> getTransaccionesPendientes(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            return ResponseEntity.ok(cajaService.getTransaccionesPendientesPaginado(page, size));
+        }
         return ResponseEntity.ok(cajaService.getTransaccionesPendientes());
     }
 
     @GetMapping("/historial")
-    public ResponseEntity<List<TransaccionCaja>> getTransaccionesHistorial() {
+    public ResponseEntity<?> getTransaccionesHistorial(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        if (page != null) {
+            return ResponseEntity.ok(cajaService.getTransaccionesHistorialPaginado(page, size));
+        }
         return ResponseEntity.ok(cajaService.getTransaccionesHistorial());
     }
 
